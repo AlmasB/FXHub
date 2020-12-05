@@ -4,6 +4,7 @@ import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
 import com.almasb.fxgl.dsl.FXGL;
 import com.almasb.fxgl.texture.ColoredTexture;
+import com.almasb.fxgl.texture.Texture;
 import com.almasb.fxgl.ui.FXGLScrollPane;
 import com.almasb.fxgl.ui.FontType;
 import javafx.animation.FillTransition;
@@ -16,6 +17,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.control.Separator;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
@@ -86,13 +88,20 @@ public class FXStoreApp extends GameApplication {
 
 
         var vbox = new VBox();
+        vbox.getChildren().addAll(new ProjectView(
+                "Almas Baimagambetov",
+                "FXGL Breakout",
+                "2.0",
+                "https://github.com/AlmasB/FXGLGames/tree/master/Breakout"
+        ), new Separator());
+
 
         for (int i = 0; i < 5; i++) {
             var project = new ProjectView(
                     "AuthorName",
                     "ProjectName",
                     "1.0." + i,
-                    "github.com/AuthorName/ProjectName/..."
+                    "https://github.com/AuthorName/ProjectName/..."
             );
 
             vbox.getChildren().addAll(project, new Separator());
@@ -172,7 +181,14 @@ public class FXStoreApp extends GameApplication {
     private static class ProjectView extends Pane {
         private Rectangle bg = new Rectangle(750, 110, Color.WHITE);
 
+        private Texture content;
+
+        private boolean isCollapsed = false;
+
         ProjectView(String authorName, String projectName, String version, String link) {
+            content = texture("breakout.png", 2690 / 4.0, 1466 / 4.0);
+            content.setTranslateY(bg.getHeight());
+
             bg.setArcWidth(2.5);
             bg.setArcHeight(2.5);
 
@@ -207,6 +223,16 @@ public class FXStoreApp extends GameApplication {
             getChildren().addAll(bg, vbox, btn);
 
             setEffect(new DropShadow(5, Color.BLACK));
+
+            setOnMouseClicked(e -> {
+                if (isCollapsed) {
+                    getChildren().remove(content);
+                } else {
+                    getChildren().add(content);
+                }
+
+                isCollapsed = !isCollapsed;
+            });
         }
     }
 
