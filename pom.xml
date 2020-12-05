@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.github.almasb</groupId>
+    <artifactId>FXStore</artifactId>
+    <version>0.1-SNAPSHOT</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <source.version>11</source.version>
+
+        <!-- plugins -->
+        <maven.compiler.version>3.8.1</maven.compiler.version>
+
+        <fxgl.version>dev-SNAPSHOT</fxgl.version>
+        <jfx.maven.plugin.version>0.0.4</jfx.maven.plugin.version>
+        <mainClassName>com.almasb.fxstore.FXStoreApp</mainClassName>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.almasb</groupId>
+            <artifactId>fxgl</artifactId>
+            <version>${fxgl.version}</version>
+        </dependency>
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>oss.sonatype.org-snapshot</id>
+            <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.version}</version>
+                <configuration>
+                    <release>${source.version}</release>
+                </configuration>
+            </plugin>
+
+            <!-- javafx maven plugin -->
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>${jfx.maven.plugin.version}</version>
+                <configuration>
+                    <stripDebug>true</stripDebug>
+                    <compress>2</compress>
+                    <noHeaderFiles>true</noHeaderFiles>
+                    <noManPages>true</noManPages>
+                    <launcher>Start-FXstore</launcher>
+                    <jlinkImageName>app</jlinkImageName>
+                    <jlinkZipName>FXstore-app</jlinkZipName>
+                    <mainClass>${mainClassName}</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
