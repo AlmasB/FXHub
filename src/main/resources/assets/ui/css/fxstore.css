@@ -1,0 +1,37 @@
+/*
+ * From http://fxexperience.com/2011/12/styling-fx-buttons-with-css/
+ */
+
+.fxgl_button {
+    -fx-background-color: transparent;
+    -fx-background-radius: 1px;
+    -fx-background-insets: 0px;
+    -fx-padding: 5 2 5 2;
+    -fx-text-fill: black;
+    -fx-font-size: 12px;
+    -fx-border-radius: 2px;
+    -fx-border-width: 1px;
+    -fx-border-color: black;
+}
+
+.fxgl_button Text {
+    -fx-effect: dropshadow( one-pass-box , rgba(0,0,0,0.8) , 0, 0.0 , 0 , 1);
+}
+
+.fxgl_button:hover {
+    -fx-background-color: lightgray;
+    -fx-text-fill: black;
+}
+
+.fxgl_button:pressed, .fxgl_button:default:hover:pressed {
+    -fx-background-color: darkgray;
+}
+
+.fxgl_button:focused {
+    -fx-text-fill: black;
+}
+
+.fxgl_button:disabled, .fxgl_button:default:disabled {
+    -fx-opacity: 0.4;
+    -fx-text-fill: #a9a9a9;
+}
