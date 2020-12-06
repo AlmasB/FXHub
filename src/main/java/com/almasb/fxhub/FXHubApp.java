@@ -295,21 +295,27 @@ public class FXHubApp extends GameApplication {
         private boolean isCollapsed = false;
 
         ProjectView(ProjectInfo project) {
-            var image = new Image(
-                    project.getScreenshotLink(),
-                    bg.getWidth() - 50,
-                    500,
-                    true,
-                    true,
-                    true
-            );
-
             content = new ImageView();
-            content.imageProperty().bind(
-                    Bindings.when(image.progressProperty().lessThan(1.0))
-                            .then(new ColoredTexture((int) bg.getWidth() - 50, 500, Color.AQUAMARINE).getImage())
-                            .otherwise(image)
-            );
+
+            if (!project.getScreenshotLink().isEmpty()) {
+                var image = new Image(
+                        project.getScreenshotLink(),
+                        bg.getWidth() - 50,
+                        500,
+                        true,
+                        true,
+                        true
+                );
+
+                content.imageProperty().bind(
+                        Bindings.when(image.progressProperty().lessThan(1.0))
+                                .then(new ColoredTexture((int) bg.getWidth() - 50, 500, Color.AQUAMARINE).getImage())
+                                .otherwise(image)
+                );
+            } else {
+                content.setImage(new ColoredTexture((int) bg.getWidth() - 50, 500, Color.AQUAMARINE).getImage());
+            }
+
             content.setTranslateX(25);
             content.setTranslateY(bg.getHeight());
 
@@ -354,7 +360,7 @@ public class FXHubApp extends GameApplication {
                                         .ifPresent(batFile -> {
                                             AppRunner.run(batFile.toFile());
                                         });
-                                
+
                                 return "";
                             } catch (IOException ioException) {
                                 ioException.printStackTrace();
