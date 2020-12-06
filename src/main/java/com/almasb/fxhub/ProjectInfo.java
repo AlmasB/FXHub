@@ -1,4 +1,4 @@
-package com.almasb.fxstore;
+package com.almasb.fxhub;
 
 import java.util.List;
 

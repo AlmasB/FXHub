@@ -1,9 +1,8 @@
-package com.almasb.fxstore;
+package com.almasb.fxhub;
 
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
 import com.almasb.fxgl.texture.ColoredTexture;
-import com.almasb.fxgl.texture.Texture;
 import com.almasb.fxgl.ui.FXGLScrollPane;
 import com.almasb.fxgl.ui.FontType;
 import javafx.beans.binding.Bindings;
@@ -12,7 +11,6 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
-import javafx.scene.control.Separator;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -37,7 +35,7 @@ import static com.almasb.fxgl.dsl.FXGL.*;
 /**
  * @author Almas Baimagambetov (almaslvl@gmail.com)
  */
-public class FXStoreApp extends GameApplication {
+public class FXHubApp extends GameApplication {
 
     private ObjectProperty<MenuItem> selectedMenuItem;
 
@@ -322,7 +320,35 @@ public class FXStoreApp extends GameApplication {
             btn.fontProperty().unbind();
             btn.setFont(Font.font(18));
             btn.setOnAction(e -> {
-                showMessage("Not implemented!");
+
+                var fileNameNoExt = project.getTitle().replace(' ', '-') + "-" + project.getVersion();
+
+                // TODO: move download + progress to FXGL codebase
+                // TODO: Windows hardcoded
+                var task = getNetService().openStreamTask(project.getExeZipLinkWindows())
+                        .thenWrap(stream -> {
+                            try (stream) {
+                                var file = Paths.get(fileNameNoExt + ".zip");
+                                Files.copy(stream, file);
+
+                                return file;
+                            } catch (Exception ex) {
+                                ex.printStackTrace();
+
+                                throw new RuntimeException("Cannot download: " + project.getExeZipLinkWindows());
+                            }
+                        })
+                        .thenWrap(zippedFile -> {
+                            Unzipper.unzip(zippedFile.toFile(), Paths.get(fileNameNoExt).toFile());
+                            return "";
+                        })
+                        .onSuccess(nothing -> {
+                            System.out.println("Success");
+                        })
+                        .onFailure(ex -> ex.printStackTrace());
+
+                getTaskService().runAsyncFX(task);
+
             });
             btn.setCursor(Cursor.HAND);
 

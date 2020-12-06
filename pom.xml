@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.almasb</groupId>
-    <artifactId>FXStore</artifactId>
-    <version>0.1-SNAPSHOT</version>
+    <artifactId>FXHub</artifactId>
+    <version>0.2-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -17,7 +17,7 @@
 
         <fxgl.version>dev-SNAPSHOT</fxgl.version>
         <jfx.maven.plugin.version>0.0.4</jfx.maven.plugin.version>
-        <mainClassName>com.almasb.fxstore.FXStoreApp</mainClassName>
+        <mainClassName>com.almasb.fxhub.FXHubApp</mainClassName>
     </properties>
 
     <dependencies>
@@ -55,9 +55,9 @@
                     <compress>2</compress>
                     <noHeaderFiles>true</noHeaderFiles>
                     <noManPages>true</noManPages>
-                    <launcher>Start-FXstore</launcher>
+                    <launcher>Run-FXHub</launcher>
                     <jlinkImageName>app</jlinkImageName>
-                    <jlinkZipName>FXstore-app</jlinkZipName>
+                    <jlinkZipName>FXHub-app</jlinkZipName>
                     <mainClass>${mainClassName}</mainClass>
                 </configuration>
             </plugin>
