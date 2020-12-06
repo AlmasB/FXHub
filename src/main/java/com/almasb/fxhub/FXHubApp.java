@@ -23,6 +23,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
@@ -52,7 +53,7 @@ public class FXHubApp extends GameApplication {
 
     @Override
     protected void initGame() {
-        getNetService().openStreamTask("https://raw.githubusercontent.com/AlmasB/FXHub-data/main/apps.txt")
+        getNetService().openStreamTask("https://raw.githubusercontent.com/AlmasB/FXHub-data/main/games.txt")
                 .onSuccess(stream -> {
                     try (stream) {
                         apps = new ArrayList<>();
@@ -315,21 +316,22 @@ public class FXHubApp extends GameApplication {
             bg.setArcWidth(2.5);
             bg.setArcHeight(2.5);
 
-            var btn = getUIFactoryService().newButton("Download");
-            btn.setPrefWidth(80);
+            var btn = getUIFactoryService().newButton("Download and Run");
+            btn.setPrefWidth(110);
             btn.fontProperty().unbind();
             btn.setFont(Font.font(18));
             btn.setOnAction(e -> {
 
                 var fileNameNoExt = project.getTitle().replace(' ', '-') + "-" + project.getVersion();
 
+                // TODO: if file already exists
                 // TODO: move download + progress to FXGL codebase
                 // TODO: Windows hardcoded
                 var task = getNetService().openStreamTask(project.getExeZipLinkWindows())
                         .thenWrap(stream -> {
                             try (stream) {
                                 var file = Paths.get(fileNameNoExt + ".zip");
-                                Files.copy(stream, file);
+                                Files.copy(stream, file, StandardCopyOption.REPLACE_EXISTING);
 
                                 return file;
                             } catch (Exception ex) {
@@ -339,11 +341,31 @@ public class FXHubApp extends GameApplication {
                             }
                         })
                         .thenWrap(zippedFile -> {
-                            Unzipper.unzip(zippedFile.toFile(), Paths.get(fileNameNoExt).toFile());
-                            return "";
+                            var destinationDir = Paths.get(fileNameNoExt);
+
+                            Unzipper.unzip(zippedFile.toFile(), destinationDir.toFile());
+                            return destinationDir;
                         })
-                        .onSuccess(nothing -> {
+                        .thenWrap(destinationDir -> {
+                            try {
+                                Files.list(destinationDir.resolve("bin"))
+                                        .filter(path -> Files.isRegularFile(path) && path.endsWith(".bat"))
+                                        .findAny()
+                                        .ifPresent(batFile -> {
+                                            AppRunner.run(batFile.toFile());
+                                        });
+                                
+                                return "";
+                            } catch (IOException ioException) {
+                                ioException.printStackTrace();
+                                throw new RuntimeException("Failed to read bin/");
+                            }
+                        })
+                        .onSuccess(destinationDir -> {
                             System.out.println("Success");
+
+
+
                         })
                         .onFailure(ex -> ex.printStackTrace());
 
