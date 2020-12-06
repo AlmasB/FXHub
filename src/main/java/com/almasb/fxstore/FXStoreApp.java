@@ -2,35 +2,35 @@ package com.almasb.fxstore;
 
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
-import com.almasb.fxgl.dsl.FXGL;
 import com.almasb.fxgl.texture.ColoredTexture;
 import com.almasb.fxgl.texture.Texture;
 import com.almasb.fxgl.ui.FXGLScrollPane;
 import com.almasb.fxgl.ui.FontType;
-import javafx.animation.FillTransition;
-import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Side;
 import javafx.scene.Cursor;
-import javafx.scene.Node;
 import javafx.scene.control.Separator;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
 import javafx.scene.effect.DropShadow;
-import javafx.scene.layout.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
-import javafx.scene.paint.CycleMethod;
-import javafx.scene.paint.LinearGradient;
-import javafx.scene.paint.Stop;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import javafx.util.Duration;
+
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
@@ -41,20 +41,152 @@ public class FXStoreApp extends GameApplication {
 
     private ObjectProperty<MenuItem> selectedMenuItem;
 
+    private List<ProjectInfo> apps;
+
     @Override
     protected void initSettings(GameSettings settings) {
-        settings.setTitle("FXStore");
-        settings.setVersion("0.1-SNAPSHOT");
+        settings.setTitle("FXHub");
+        settings.setVersion("0.2-SNAPSHOT");
         settings.setWidth(1066);
         settings.setHeightFromRatio(16/9.0);
         settings.getCSSList().add("fxstore.css");
     }
 
     @Override
+    protected void initGame() {
+        getNetService().openStreamTask("https://raw.githubusercontent.com/AlmasB/FXHub-data/main/apps.txt")
+                .onSuccess(stream -> {
+                    try (stream) {
+                        apps = new ArrayList<>();
+
+                        var file = Paths.get("apps.txt");
+
+                        Files.copy(stream, file, StandardCopyOption.REPLACE_EXISTING);
+
+                        var lines = Files.readAllLines(file);
+
+                        String title = "Untitled";
+                        String version = "0.0";
+                        String description = "No description";
+                        List<String> authors = new ArrayList<>();
+                        List<String> tags = new ArrayList<>();
+                        String website = "";
+                        String screenshotLink = "";
+                        String exeZipLinkWindows = "";
+                        String exeZipLinkLinux = "";
+                        String exeZipLinkMac = "";
+
+                        for (var line : lines) {
+                            var trimmedLine = line.trim();
+
+                            // new project
+                            if (trimmedLine.startsWith("---")) {
+
+                                var project = new ProjectInfo(
+                                        title,
+                                        version,
+                                        description,
+                                        authors,
+                                        tags,
+                                        website,
+                                        screenshotLink,
+                                        exeZipLinkWindows,
+                                        exeZipLinkLinux,
+                                        exeZipLinkMac
+                                );
+
+                                apps.add(project);
+
+                                title = "Untitled";
+                                version = "0.0";
+                                description = "No description";
+                                authors = new ArrayList<>();
+                                tags = new ArrayList<>();
+                                website = "";
+                                screenshotLink = "";
+                                exeZipLinkWindows = "";
+                                exeZipLinkLinux = "";
+                                exeZipLinkMac = "";
+
+                                continue;
+                            }
+
+                            if (trimmedLine.startsWith("#") || trimmedLine.isEmpty()) {
+                                continue;
+                            }
+
+                            int indexOfEquals = trimmedLine.indexOf('=');
+
+                            if (indexOfEquals == -1) {
+                                continue;
+                            }
+
+
+                            // TODO: indexOfEquals + 1 vs length check?
+                            var key = trimmedLine.substring(0, indexOfEquals).trim();
+                            var value = trimmedLine.substring(indexOfEquals + 1).trim();
+
+                            if (key.isEmpty() || value.isEmpty()) {
+                                continue;
+                            }
+
+                            if (key.equals("title")) {
+                                title = value;
+                            } else if (key.equals("version")) {
+                                version = value;
+                            } else if (key.equals("description")) {
+                                description = value;
+                            } else if (key.equals("authors")) {
+                                authors = Arrays.asList(value.split(","));
+                            } else if (key.equals("tags")) {
+                                tags = Arrays.asList(value.split(","));
+                            } else if (key.equals("website")) {
+                                website = value;
+                            } else if (key.equals("screenshot")) {
+                                screenshotLink = value;
+                            } else if (key.equals("exeWindows")) {
+                                exeZipLinkWindows = value;
+                            } else if (key.equals("exeLinux")) {
+                                exeZipLinkLinux = value;
+                            } else if (key.equals("exeMac")) {
+                                exeZipLinkMac = value;
+                            } else {
+                                System.out.println("Unknown key: " + key + " Value: " + value);
+                            }
+                        }
+
+                        // left over
+                        var project = new ProjectInfo(
+                                title,
+                                version,
+                                description,
+                                authors,
+                                tags,
+                                website,
+                                screenshotLink,
+                                exeZipLinkWindows,
+                                exeZipLinkLinux,
+                                exeZipLinkMac
+                        );
+
+                        apps.add(project);
+
+
+                        System.out.println(apps);
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                })
+                .onFailure(e -> e.printStackTrace())
+                .run();
+    }
+
+    @Override
     protected void initUI() {
         getGameScene().setBackgroundColor(Color.LIGHTGRAY);
 
-        var title = new Title("FXStore");
+        var title = new Title(getSettings().getTitle());
 
         addUINode(title);
 
@@ -80,49 +212,27 @@ public class FXStoreApp extends GameApplication {
                 selectedMenuItem.get(),
                 new MenuItem("Games", selectedMenuItem, () -> {}),
                 new MenuItem("Projects", selectedMenuItem, () -> {}),
-                new MenuItem("Tutorials", selectedMenuItem, () -> {})
+                new MenuItem("Tutorials", selectedMenuItem, () -> {}),
+                new MenuItem("Search", selectedMenuItem, () -> {})
         );
 
         addUINode(box, 0, 50);
 
-
-
+        // projects
         var vbox = new VBox();
-        vbox.getChildren().addAll(new ProjectView(
-                "Almas Baimagambetov",
-                "FXGL Breakout",
-                "2.0",
-                "https://github.com/AlmasB/FXGLGames/tree/master/Breakout"
-        ), new Separator());
-
-
-        for (int i = 0; i < 5; i++) {
-            var project = new ProjectView(
-                    "AuthorName",
-                    "ProjectName",
-                    "1.0." + i,
-                    "https://github.com/AuthorName/ProjectName/..."
-            );
-
-            vbox.getChildren().addAll(project, new Separator());
-        }
-
         vbox.setPadding(new Insets(5));
+
+        apps.forEach(project -> {
+            var view = new ProjectView(project);
+
+            vbox.getChildren().addAll(view);
+        });
 
         var scrollPane = new FXGLScrollPane(vbox);
         scrollPane.setPrefWidth(780);
         scrollPane.setPrefHeight(getAppHeight() - 110);
 
         addUINode(scrollPane, 265, 60);
-
-
-//        var image = new ColoredTexture(600, 400, Color.LIGHTSALMON);
-
-//
-//        var stack = new StackPane(new Rectangle(600, 400, Color.TRANSPARENT), btn);
-//        stack.setAlignment(Pos.TOP_RIGHT);
-//
-//        addUINode(stack, 200, 50);
     }
 
     private static class Title extends StackPane {
@@ -181,12 +291,27 @@ public class FXStoreApp extends GameApplication {
     private static class ProjectView extends Pane {
         private Rectangle bg = new Rectangle(750, 110, Color.WHITE);
 
-        private Texture content;
+        private ImageView content;
 
         private boolean isCollapsed = false;
 
-        ProjectView(String authorName, String projectName, String version, String link) {
-            content = texture("breakout.png", 2690 / 4.0, 1466 / 4.0);
+        ProjectView(ProjectInfo project) {
+            var image = new Image(
+                    project.getScreenshotLink(),
+                    bg.getWidth() - 50,
+                    500,
+                    true,
+                    true,
+                    true
+            );
+
+            content = new ImageView();
+            content.imageProperty().bind(
+                    Bindings.when(image.progressProperty().lessThan(1.0))
+                            .then(new ColoredTexture((int) bg.getWidth() - 50, 500, Color.AQUAMARINE).getImage())
+                            .otherwise(image)
+            );
+            content.setTranslateX(25);
             content.setTranslateY(bg.getHeight());
 
             bg.setArcWidth(2.5);
@@ -197,38 +322,47 @@ public class FXStoreApp extends GameApplication {
             btn.fontProperty().unbind();
             btn.setFont(Font.font(18));
             btn.setOnAction(e -> {
-                showMessage("1. Downloading: \ngithub.com/AlmasB/FXGL/releases/download/11.11/app-beta-win.zip\n" +
-                        "2. Unzipping ...\n" +
-                        "3. Running ...");
+                showMessage("Not implemented!");
             });
             btn.setCursor(Cursor.HAND);
 
             btn.setTranslateX(bg.getWidth() - btn.getPrefWidth() - 10);
             btn.setTranslateY(10);
 
-            var projectNameText = new Text(projectName);
+            var projectNameText = new Text(project.getTitle());
             projectNameText.setFont(Font.font(24));
 
-            var projectVersionText = getUIFactoryService().newText(version, Color.BLACK, 18);
-            var authorNameText = getUIFactoryService().newText(authorName, Color.BLACK, 14.0);
-            var projectLinkText = getUIFactoryService().newText(link, Color.BLACK, FontType.MONO, 14.0);
+            var projectVersionText = getUIFactoryService().newText(project.getVersion(), Color.BLACK, 18);
+            var authorNameText = getUIFactoryService().newText(project.getAuthors().toString(), Color.BLACK, 14.0);
+            var projectWebsiteText = getUIFactoryService().newText(project.getWebsite(), Color.BLACK, FontType.MONO, 14.0);
+            projectWebsiteText.setWrappingWidth(bg.getWidth() - 50);
+            projectWebsiteText.setCursor(Cursor.HAND);
+            projectWebsiteText.setOnMouseClicked(e -> {
+                showMessage("Not implemented!");
+            });
+
+            projectWebsiteText.fillProperty().bind(
+                    Bindings.when(projectWebsiteText.hoverProperty())
+                            .then(Color.BLUE)
+                            .otherwise(Color.BLACK)
+            );
 
             var box = new HBox(15, projectNameText, projectVersionText);
             //box.setTranslateX(10);
             //box.setTranslateY(5);
 
-            var vbox = new VBox(10, box, authorNameText, projectLinkText);
+            var vbox = new VBox(10, box, authorNameText, projectWebsiteText);
             vbox.setPadding(new Insets(10));
 
             getChildren().addAll(bg, vbox, btn);
 
-            setEffect(new DropShadow(5, Color.BLACK));
+            bg.setEffect(new DropShadow(5, Color.BLACK));
 
             setOnMouseClicked(e -> {
                 if (isCollapsed) {
                     getChildren().remove(content);
                 } else {
-                    getChildren().add(content);
+                    getChildren().add(0, content);
                 }
 
                 isCollapsed = !isCollapsed;
