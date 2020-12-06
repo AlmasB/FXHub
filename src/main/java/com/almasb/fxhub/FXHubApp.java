@@ -33,6 +33,8 @@ import java.util.List;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
+// TODO: self-update
+
 /**
  * @author Almas Baimagambetov (almaslvl@gmail.com)
  */
@@ -327,9 +329,11 @@ public class FXHubApp extends GameApplication {
             btn.fontProperty().unbind();
             btn.setFont(Font.font(18));
             btn.setOnAction(e -> {
+                btn.setDisable(true);
 
                 var fileNameNoExt = project.getTitle().replace(' ', '-') + "-" + project.getVersion();
 
+                // TODO: cancel download
                 // TODO: if file already exists
                 // TODO: move download + progress to FXGL codebase
                 // TODO: Windows hardcoded
@@ -355,7 +359,6 @@ public class FXHubApp extends GameApplication {
                         .thenWrap(destinationDir -> {
                             try {
                                 Files.list(destinationDir.resolve("bin"))
-                                        //.forEach(path -> System.out.println(path));
                                         .filter(path -> path.toAbsolutePath().toString().endsWith(".bat"))
                                         .findAny()
                                         .ifPresent(batFile -> {
@@ -372,14 +375,10 @@ public class FXHubApp extends GameApplication {
                         })
                         .onSuccess(destinationDir -> {
                             System.out.println("Success");
-
-
-
                         })
                         .onFailure(ex -> ex.printStackTrace());
 
-                getTaskService().runAsyncFX(task);
-
+                getTaskService().runAsyncFXWithDialog(task, "Downloading ~60MB, then running it. Please wait...");
             });
             btn.setCursor(Cursor.HAND);
 

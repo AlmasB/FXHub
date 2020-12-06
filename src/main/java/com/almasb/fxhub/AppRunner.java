@@ -4,7 +4,6 @@ package com.almasb.fxhub;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 
 /**
@@ -18,9 +17,6 @@ public class AppRunner {
      */
     public static void run(File exeFile) {
         ProcessBuilder processBuilder = new ProcessBuilder(exeFile.getAbsolutePath());
-
-        //Process process = Runtime.getRuntime().exec(
-        //            "cmd /c hello.bat", null, new File("C:\\Users\\mkyong\\"));
 
         try {
             Process process = processBuilder.start();
