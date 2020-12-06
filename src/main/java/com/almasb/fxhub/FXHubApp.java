@@ -2,6 +2,7 @@ package com.almasb.fxhub;
 
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
+import com.almasb.fxgl.core.util.LazyValue;
 import com.almasb.fxgl.texture.ColoredTexture;
 import com.almasb.fxgl.ui.FXGLScrollPane;
 import com.almasb.fxgl.ui.FontType;
@@ -11,6 +12,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -30,6 +32,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
@@ -40,9 +43,15 @@ import static com.almasb.fxgl.dsl.FXGL.*;
  */
 public class FXHubApp extends GameApplication {
 
+    private static final String APPS_LINK = "https://raw.githubusercontent.com/AlmasB/FXHub-data/main/apps.txt";
+    private static final String GAMES_LINK = "https://raw.githubusercontent.com/AlmasB/FXHub-data/main/games.txt";
+    private static final String PROJECTS_LINK = "https://raw.githubusercontent.com/AlmasB/FXHub-data/main/projects.txt";
+
     private ObjectProperty<MenuItem> selectedMenuItem;
 
     private List<ProjectInfo> apps;
+    private List<ProjectInfo> games;
+    private List<ProjectInfo> projects;
 
     @Override
     protected void initSettings(GameSettings settings) {
@@ -55,12 +64,29 @@ public class FXHubApp extends GameApplication {
 
     @Override
     protected void initGame() {
-        getNetService().openStreamTask("https://raw.githubusercontent.com/AlmasB/FXHub-data/main/games.txt")
+        apps = new ArrayList<>();
+        games = new ArrayList<>();
+        projects = new ArrayList<>();
+
+        Map<String, List<ProjectInfo>> cache = Map.of(
+                APPS_LINK, apps,
+                GAMES_LINK, games,
+                PROJECTS_LINK, projects
+        );
+
+        cache.forEach((link, list) -> {
+            loadProjectsInto(link, link.substring(link.lastIndexOf("/") + 1), list);
+        });
+    }
+
+    private void loadProjectsInto(String link, String cacheFileName, List<ProjectInfo> projects) {
+        getNetService().openStreamTask(link)
                 .onSuccess(stream -> {
                     try (stream) {
-                        apps = new ArrayList<>();
 
-                        var file = Paths.get("apps.txt");
+                        // TODO: clean up parsing
+
+                        var file = Paths.get(cacheFileName);
 
                         Files.copy(stream, file, StandardCopyOption.REPLACE_EXISTING);
 
@@ -96,7 +122,7 @@ public class FXHubApp extends GameApplication {
                                         exeZipLinkMac
                                 );
 
-                                apps.add(project);
+                                projects.add(project);
 
                                 title = "Untitled";
                                 version = "0.0";
@@ -170,10 +196,7 @@ public class FXHubApp extends GameApplication {
                                 exeZipLinkMac
                         );
 
-                        apps.add(project);
-
-
-                        System.out.println(apps);
+                        projects.add(project);
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -187,57 +210,78 @@ public class FXHubApp extends GameApplication {
     protected void initUI() {
         getGameScene().setBackgroundColor(Color.LIGHTGRAY);
 
-        var title = new Title(getSettings().getTitle());
+        // header
+        addUINode(new Header(getSettings().getTitle()));
 
-        addUINode(title);
-
-
-        //
-
-        Text selectedItemTitle = getUIFactoryService().newText("Apps", Color.BLACK, 25.0);
-
-        //addUINode(selectedItemTitle, 280, 80);
-
-
+        // left side
         selectedMenuItem = new SimpleObjectProperty<>();
-        selectedMenuItem.set(new MenuItem("Apps", selectedMenuItem, () -> {}));
-        selectedMenuItem.get().setSelected(true);
-        selectedMenuItem.addListener((o, oldValue, newValue) -> {
-            oldValue.setSelected(false);
-            newValue.setSelected(true);
 
-            selectedItemTitle.setText(newValue.text.getText());
-        });
+        // TODO: clean up repetition when we know what each menu item does...
+        VBox sidePane = new VBox(
+                new MenuItem("Apps", selectedMenuItem, new LazyValue<>(() -> {
+                    var projectsPane = new VBox();
+                    projectsPane.setPadding(new Insets(5));
+                    apps.forEach(project -> {
+                        projectsPane.getChildren().addAll(new ProjectView(project));
+                    });
 
-        VBox box = new VBox(
-                selectedMenuItem.get(),
-                new MenuItem("Games", selectedMenuItem, () -> {}),
-                new MenuItem("Projects", selectedMenuItem, () -> {}),
-                new MenuItem("Tutorials", selectedMenuItem, () -> {}),
-                new MenuItem("Search", selectedMenuItem, () -> {})
+                    return projectsPane;
+                })),
+
+                new MenuItem("Games", selectedMenuItem, new LazyValue<>(() -> {
+                    var projectsPane = new VBox();
+                    projectsPane.setPadding(new Insets(5));
+                    games.forEach(project -> {
+                        projectsPane.getChildren().addAll(new ProjectView(project));
+                    });
+
+                    return projectsPane;
+                })),
+
+                new MenuItem("Projects", selectedMenuItem, new LazyValue<>(() -> {
+                    var projectsPane = new VBox();
+                    projectsPane.setPadding(new Insets(5));
+                    projects.forEach(project -> {
+                        projectsPane.getChildren().addAll(new ProjectView(project));
+                    });
+
+                    return projectsPane;
+                })),
+
+                new MenuItem("Tutorials", selectedMenuItem, new LazyValue<>(() -> {
+                    return new Text("No tutorials");
+                })),
+
+                new MenuItem("Search", selectedMenuItem, new LazyValue<>(() -> {
+                    return new Text("Not implemented yet");
+                }))
         );
 
-        addUINode(box, 0, 50);
+        addUINode(sidePane, 0, 50);
 
-        // projects
-        var vbox = new VBox();
-        vbox.setPadding(new Insets(5));
-
-        apps.forEach(project -> {
-            var view = new ProjectView(project);
-
-            vbox.getChildren().addAll(view);
-        });
-
-        var scrollPane = new FXGLScrollPane(vbox);
+        // right side
+        var scrollPane = new FXGLScrollPane();
         scrollPane.setPrefWidth(780);
         scrollPane.setPrefHeight(getAppHeight() - 110);
 
         addUINode(scrollPane, 265, 60);
+
+        // selection logic
+
+        selectedMenuItem.set((MenuItem) sidePane.getChildren().get(0));
+        selectedMenuItem.get().setSelected(true);
+        scrollPane.setContent(selectedMenuItem.get().content.get());
+
+        selectedMenuItem.addListener((o, oldItem, newItem) -> {
+            oldItem.setSelected(false);
+            newItem.setSelected(true);
+
+            scrollPane.setContent(newItem.content.get());
+        });
     }
 
-    private static class Title extends StackPane {
-        Title(String name) {
+    private static class Header extends StackPane {
+        Header(String name) {
             var text = getUIFactoryService().newText(name, Color.BLACK, 22.0);
             text.setTranslateX(15);
 
@@ -254,10 +298,15 @@ public class FXHubApp extends GameApplication {
     private static class MenuItem extends StackPane {
         private Rectangle line = new Rectangle(5, 60, Color.ORANGE);
 
-        Text text;
+        private LazyValue<Node> content;
 
-        MenuItem(String name, ObjectProperty<MenuItem> selector, Runnable action) {
+        private Text text;
+
+        MenuItem(String name, ObjectProperty<MenuItem> selector, LazyValue<Node> content) {
+            this.content = content;
             text = new Text(name);
+
+
             Rectangle bg0 = new Rectangle(250, 60);
 
             bg0.fillProperty().bind(
@@ -269,7 +318,6 @@ public class FXHubApp extends GameApplication {
 
             setOnMouseClicked(e -> {
                 selector.set(this);
-                action.run();
             });
 
             setAlignment(Pos.CENTER_LEFT);
@@ -299,24 +347,25 @@ public class FXHubApp extends GameApplication {
         ProjectView(ProjectInfo project) {
             content = new ImageView();
 
-            if (!project.getScreenshotLink().isEmpty()) {
-                var image = new Image(
-                        project.getScreenshotLink(),
-                        bg.getWidth() - 50,
-                        500,
-                        true,
-                        true,
-                        true
-                );
-
-                content.imageProperty().bind(
-                        Bindings.when(image.progressProperty().lessThan(1.0))
-                                .then(new ColoredTexture((int) bg.getWidth() - 50, 500, Color.AQUAMARINE).getImage())
-                                .otherwise(image)
-                );
-            } else {
-                content.setImage(new ColoredTexture((int) bg.getWidth() - 50, 500, Color.AQUAMARINE).getImage());
-            }
+            // TODO: lazy loading of images
+//            if (!project.getScreenshotLink().isEmpty()) {
+//                var image = new Image(
+//                        project.getScreenshotLink(),
+//                        bg.getWidth() - 50,
+//                        500,
+//                        true,
+//                        true,
+//                        true
+//                );
+//
+//                content.imageProperty().bind(
+//                        Bindings.when(image.progressProperty().lessThan(1.0))
+//                                .then(new ColoredTexture((int) bg.getWidth() - 50, 500, Color.AQUAMARINE).getImage())
+//                                .otherwise(image)
+//                );
+//            } else {
+//                content.setImage(new ColoredTexture((int) bg.getWidth() - 50, 500, Color.AQUAMARINE).getImage());
+//            }
 
             content.setTranslateX(25);
             content.setTranslateY(bg.getHeight());
@@ -414,15 +463,15 @@ public class FXHubApp extends GameApplication {
 
             bg.setEffect(new DropShadow(5, Color.BLACK));
 
-            setOnMouseClicked(e -> {
-                if (isCollapsed) {
-                    getChildren().remove(content);
-                } else {
-                    getChildren().add(0, content);
-                }
-
-                isCollapsed = !isCollapsed;
-            });
+//            setOnMouseClicked(e -> {
+//                if (isCollapsed) {
+//                    getChildren().remove(content);
+//                } else {
+//                    getChildren().add(0, content);
+//                }
+//
+//                isCollapsed = !isCollapsed;
+//            });
         }
     }
 
