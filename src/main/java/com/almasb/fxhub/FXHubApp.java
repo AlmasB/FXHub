@@ -377,8 +377,13 @@ public class FXHubApp extends GameApplication {
             btn.setPrefWidth(110);
             btn.fontProperty().unbind();
             btn.setFont(Font.font(18));
-            btn.setOnAction(e -> {
+
+            if (project.getExeZipLinkWindows().isEmpty()) {
                 btn.setDisable(true);
+            }
+
+            btn.setOnAction(e -> {
+
 
                 var fileNameNoExt = project.getTitle().replace(' ', '-') + "-" + project.getVersion();
 
