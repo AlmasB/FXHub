@@ -17,7 +17,7 @@ public class AppRunner {
      * @param exeFile on Windows, smth.bat
      */
     public static void run(File exeFile) {
-        ProcessBuilder processBuilder = new ProcessBuilder("C:\\Users\\mkyong\\hello.bat");
+        ProcessBuilder processBuilder = new ProcessBuilder(exeFile.getAbsolutePath());
 
         //Process process = Runtime.getRuntime().exec(
         //            "cmd /c hello.bat", null, new File("C:\\Users\\mkyong\\"));

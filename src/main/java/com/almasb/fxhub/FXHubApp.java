@@ -358,6 +358,8 @@ public class FXHubApp extends GameApplication {
                                         .filter(path -> Files.isRegularFile(path) && path.endsWith(".bat"))
                                         .findAny()
                                         .ifPresent(batFile -> {
+                                            System.out.println("Found bat file: " + batFile);
+
                                             AppRunner.run(batFile.toFile());
                                         });
 
