@@ -377,10 +377,6 @@ public class FXHubApp extends GameApplication {
             btn.fontProperty().unbind();
             btn.setFont(Font.font(18));
 
-            if (project.getExeZipLinkWindows().isEmpty()) {
-                btn.setDisable(true);
-            }
-
             btn.setOnAction(e -> {
 
 
@@ -447,7 +443,8 @@ public class FXHubApp extends GameApplication {
             projectWebsiteText.setWrappingWidth(bg.getWidth() - 50);
             projectWebsiteText.setCursor(Cursor.HAND);
             projectWebsiteText.setOnMouseClicked(e -> {
-                showMessage("Not implemented!");
+                if (!project.getWebsite().isEmpty())
+                    getFXApp().getHostServices().showDocument(project.getWebsite());
             });
 
             projectWebsiteText.fillProperty().bind(
@@ -463,7 +460,11 @@ public class FXHubApp extends GameApplication {
             var vbox = new VBox(10, box, authorNameText, projectWebsiteText);
             vbox.setPadding(new Insets(10));
 
-            getChildren().addAll(bg, vbox, btn);
+            getChildren().addAll(bg, vbox);
+
+            if (!project.getExeZipLinkWindows().isEmpty()) {
+                getChildren().add(btn);
+            }
 
             bg.setEffect(new DropShadow(5, Color.BLACK));
 
