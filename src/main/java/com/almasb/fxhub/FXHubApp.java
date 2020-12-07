@@ -414,7 +414,9 @@ public class FXHubApp extends GameApplication {
                 var task = newDownloadTask(project.getExeZipLinkWindows(), project)
                         .thenWrap(downloadedFile -> {
 
-                            if (downloadedFile.endsWith(".zip")) {
+                            String downloadedFileName = downloadedFile.toAbsolutePath().toString();
+
+                            if (downloadedFileName.endsWith(".zip")) {
                                 var destinationDir = Paths.get(fileNameNoExt);
 
                                 Unzipper.unzip(downloadedFile.toFile(), destinationDir.toFile());
@@ -430,7 +432,7 @@ public class FXHubApp extends GameApplication {
                                 }
                             }
 
-                            if (downloadedFile.endsWith(".msi")) {
+                            if (downloadedFileName.endsWith(".msi")) {
                                 return Optional.of(downloadedFile);
                             }
 
@@ -519,7 +521,7 @@ public class FXHubApp extends GameApplication {
                     try (stream) {
 
                         // TODO: assuming there is a last '.'
-                        var file = Paths.get(fileNameNoExt + url.substring(url.lastIndexOf('.') + 1));
+                        var file = Paths.get(fileNameNoExt + "." + url.substring(url.lastIndexOf('.') + 1));
 
                         if (!Files.exists(file)) {
                             // TODO: REPLACE_EXISTING is not needed...
