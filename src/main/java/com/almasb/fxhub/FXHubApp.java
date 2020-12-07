@@ -26,6 +26,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -408,6 +410,17 @@ public class FXHubApp extends GameApplication {
 
                 var fileNameNoExt = project.getTitle().replace(' ', '-') + "-" + project.getVersion();
 
+                double fileSizeMB = -1.0;
+
+                try {
+                    URL url = new URL(project.getExeZipLinkWindows());
+                    fileSizeMB = url.openConnection().getContentLengthLong() / 1024.0 / 1024.0;
+
+                } catch (Exception ex1) {
+                    ex1.printStackTrace();
+                }
+
+
                 // TODO: cancel download
                 // TODO: move download + progress to FXGL codebase
                 // TODO: Windows hardcoded
@@ -450,7 +463,9 @@ public class FXHubApp extends GameApplication {
                         .onSuccess(result -> log.info("Ran successfully: " + result))
                         .onFailure(ex -> ex.printStackTrace());
 
-                getTaskService().runAsyncFXWithDialog(task, "Downloading ~60MB, then running it. Please wait...");
+                var userMessage = String.format("Downloading %.2f MB, then running it. Please wait...", fileSizeMB);
+
+                getTaskService().runAsyncFXWithDialog(task, userMessage);
             });
             btn.setCursor(Cursor.HAND);
 
@@ -461,8 +476,9 @@ public class FXHubApp extends GameApplication {
 
             var projectVersionText = getUIFactoryService().newText(project.getVersion(), Color.BLACK, 18);
             var authorNameText = getUIFactoryService().newText(project.getAuthors().toString(), Color.BLACK, 14.0);
+
+            // TODO: truncate website name to fixed number of chars
             var projectWebsiteText = getUIFactoryService().newText(project.getWebsite(), Color.BLACK, FontType.MONO, 14.0);
-            projectWebsiteText.setWrappingWidth(bg.getWidth() - 50);
             projectWebsiteText.setCursor(Cursor.HAND);
             projectWebsiteText.setOnMouseClicked(e -> {
                 if (!project.getWebsite().isEmpty())
