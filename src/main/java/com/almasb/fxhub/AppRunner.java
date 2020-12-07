@@ -16,7 +16,15 @@ public class AppRunner {
      * @param exeFile on Windows, smth.bat
      */
     public static void run(File exeFile) {
-        ProcessBuilder processBuilder = new ProcessBuilder(exeFile.getAbsolutePath());
+        String fileName = exeFile.getAbsolutePath();
+
+        ProcessBuilder processBuilder;
+
+        if (fileName.endsWith(".bat")) {
+            processBuilder = new ProcessBuilder(fileName);
+        } else {
+            processBuilder = new ProcessBuilder("msiexec", "/i", fileName);
+        }
 
         try {
             Process process = processBuilder.start();
