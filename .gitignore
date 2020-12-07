@@ -26,3 +26,8 @@ target/
 *.log
 logs/
 system/
+
+# FXHub-data #
+apps.txt
+games.txt
+projects.txt
