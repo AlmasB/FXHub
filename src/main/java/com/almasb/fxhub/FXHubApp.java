@@ -2,8 +2,9 @@ package com.almasb.fxhub;
 
 import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
+import com.almasb.fxgl.core.concurrent.IOTask;
 import com.almasb.fxgl.core.util.LazyValue;
-import com.almasb.fxgl.texture.ColoredTexture;
+import com.almasb.fxgl.logging.Logger;
 import com.almasb.fxgl.ui.FXGLScrollPane;
 import com.almasb.fxgl.ui.FontType;
 import javafx.beans.binding.Bindings;
@@ -14,7 +15,6 @@ import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
 import javafx.scene.effect.DropShadow;
-import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
@@ -27,6 +27,7 @@ import javafx.scene.text.Text;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
@@ -39,6 +40,8 @@ import static com.almasb.fxgl.dsl.FXGL.*;
  * @author Almas Baimagambetov (almaslvl@gmail.com)
  */
 public class FXHubApp extends GameApplication {
+
+    private static final Logger log = Logger.get(FXHubApp.class);
 
     private static final String APPS_LINK = "https://raw.githubusercontent.com/AlmasB/FXHub-data/main/apps.txt";
     private static final String GAMES_LINK = "https://raw.githubusercontent.com/AlmasB/FXHub-data/main/games.txt";
@@ -53,7 +56,7 @@ public class FXHubApp extends GameApplication {
     @Override
     protected void initSettings(GameSettings settings) {
         settings.setTitle("FXHub");
-        settings.setVersion("0.2-SNAPSHOT");
+        settings.setVersion("0.2-SNAPSHOT Pre-alpha");
         settings.setWidth(1066);
         settings.setHeightFromRatio(16/9.0);
         settings.getCSSList().add("fxstore.css");
@@ -211,6 +214,20 @@ public class FXHubApp extends GameApplication {
 
         // header
         addUINode(new Header(getSettings().getTitle()));
+
+        var btnAbout = getUIFactoryService().newButton("About");
+        btnAbout.setPrefWidth(60);
+        btnAbout.fontProperty().unbind();
+        btnAbout.setFont(Font.font(18));
+        btnAbout.setOnAction(e -> {
+            showMessage(
+                    "FXHub - a hub for JavaFX goodies\n" +
+                    "Windows logo: https://www.flaticon.com/authors/pixel-perfect\n" +
+                    "Linux logo: https://www.flaticon.com/authors/freepik"
+            );
+        });
+
+        addUINode(btnAbout, getAppWidth() - 80, 5);
 
         // left side
         selectedMenuItem = new SimpleObjectProperty<>();
@@ -377,62 +394,65 @@ public class FXHubApp extends GameApplication {
             btn.fontProperty().unbind();
             btn.setFont(Font.font(18));
 
+            btn.setTranslateX(bg.getWidth() - btn.getPrefWidth() - 10);
+            btn.setTranslateY(10);
+
+            if (project.getExeZipLinkWindows().endsWith(".msi")) {
+                btn.setText("Download and Install");
+                btn.setPrefWidth(130);
+                btn.setTranslateX(bg.getWidth() - btn.getPrefWidth() - 30);
+            }
+
             btn.setOnAction(e -> {
 
 
                 var fileNameNoExt = project.getTitle().replace(' ', '-') + "-" + project.getVersion();
 
                 // TODO: cancel download
-                // TODO: if file already exists
                 // TODO: move download + progress to FXGL codebase
                 // TODO: Windows hardcoded
-                var task = getNetService().openStreamTask(project.getExeZipLinkWindows())
-                        .thenWrap(stream -> {
-                            try (stream) {
-                                var file = Paths.get(fileNameNoExt + ".zip");
-                                Files.copy(stream, file, StandardCopyOption.REPLACE_EXISTING);
+                var task = newDownloadTask(project.getExeZipLinkWindows(), project)
+                        .thenWrap(downloadedFile -> {
 
-                                return file;
-                            } catch (Exception ex) {
-                                ex.printStackTrace();
+                            if (downloadedFile.endsWith(".zip")) {
+                                var destinationDir = Paths.get(fileNameNoExt);
 
-                                throw new RuntimeException("Cannot download: " + project.getExeZipLinkWindows());
+                                Unzipper.unzip(downloadedFile.toFile(), destinationDir.toFile());
+
+                                try {
+                                    return Files.list(destinationDir.resolve("bin"))
+                                            .filter(path -> path.toAbsolutePath().toString().endsWith(".bat"))
+                                            .findAny();
+
+                                } catch (IOException ex) {
+                                    ex.printStackTrace();
+                                    throw new RuntimeException("Failed to read bin/");
+                                }
                             }
-                        })
-                        .thenWrap(zippedFile -> {
-                            var destinationDir = Paths.get(fileNameNoExt);
 
-                            Unzipper.unzip(zippedFile.toFile(), destinationDir.toFile());
-                            return destinationDir;
-                        })
-                        .thenWrap(destinationDir -> {
-                            try {
-                                Files.list(destinationDir.resolve("bin"))
-                                        .filter(path -> path.toAbsolutePath().toString().endsWith(".bat"))
-                                        .findAny()
-                                        .ifPresent(batFile -> {
-                                            System.out.println("Found bat file: " + batFile);
-
-                                            AppRunner.run(batFile.toFile());
-                                        });
-
-                                return "";
-                            } catch (IOException ioException) {
-                                ioException.printStackTrace();
-                                throw new RuntimeException("Failed to read bin/");
+                            if (downloadedFile.endsWith(".msi")) {
+                                return Optional.of(downloadedFile);
                             }
+
+                            throw new RuntimeException("Unknown Windows distribution file: " + downloadedFile);
+
                         })
-                        .onSuccess(destinationDir -> {
-                            System.out.println("Success");
+                        .thenWrap(fileToRunOptional -> {
+
+                            var exePath = fileToRunOptional.orElseThrow(() -> new RuntimeException("Failed to identify executable file"));
+
+                            AppRunner.run(exePath.toFile());
+
+                            return "";
                         })
+                        .onSuccess(result -> log.info("Ran successfully: " + result))
                         .onFailure(ex -> ex.printStackTrace());
 
                 getTaskService().runAsyncFXWithDialog(task, "Downloading ~60MB, then running it. Please wait...");
             });
             btn.setCursor(Cursor.HAND);
 
-            btn.setTranslateX(bg.getWidth() - btn.getPrefWidth() - 10);
-            btn.setTranslateY(10);
+
 
             var projectNameText = new Text(project.getTitle());
             projectNameText.setFont(Font.font(24));
@@ -462,9 +482,17 @@ public class FXHubApp extends GameApplication {
 
             getChildren().addAll(bg, vbox);
 
+            // logos
             if (!project.getExeZipLinkWindows().isEmpty()) {
-                getChildren().add(btn);
+                var logoWin = texture("windows.png", 32, 32);
+
+                logoWin.setTranslateX(btn.getTranslateX());
+                logoWin.setTranslateY(btn.getTranslateY() + 40);
+
+                getChildren().addAll(btn, logoWin);
             }
+
+
 
             bg.setEffect(new DropShadow(5, Color.BLACK));
 
@@ -478,6 +506,33 @@ public class FXHubApp extends GameApplication {
 //                isCollapsed = !isCollapsed;
 //            });
         }
+    }
+
+    /**
+     * @return (new download task or dummy task) with downloaded file
+     */
+    private static IOTask<Path> newDownloadTask(String url, ProjectInfo project) {
+        var fileNameNoExt = project.getTitle().replace(' ', '-') + "-" + project.getVersion();
+
+        return getNetService().openStreamTask(url)
+                .thenWrap(stream -> {
+                    try (stream) {
+
+                        // TODO: assuming there is a last '.'
+                        var file = Paths.get(fileNameNoExt + url.substring(url.lastIndexOf('.') + 1));
+
+                        if (!Files.exists(file)) {
+                            // TODO: REPLACE_EXISTING is not needed...
+                            Files.copy(stream, file, StandardCopyOption.REPLACE_EXISTING);
+                        }
+
+                        return file;
+                    } catch (Exception e) {
+                        log.warning("Failed to dowload: " + url, e);
+
+                        throw new RuntimeException("Cannot download: " + url);
+                    }
+                });
     }
 
     public static void main(String[] args) {
