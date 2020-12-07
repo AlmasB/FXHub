@@ -29,10 +29,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
@@ -76,6 +73,8 @@ public class FXHubApp extends GameApplication {
 
         cache.forEach((link, list) -> {
             loadProjectsInto(link, link.substring(link.lastIndexOf("/") + 1), list);
+
+            list.sort(Comparator.comparing(ProjectInfo::getTitle));
         });
     }
 
