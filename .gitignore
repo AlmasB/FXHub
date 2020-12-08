@@ -31,3 +31,11 @@ system/
 apps.txt
 games.txt
 projects.txt
+
+cache/
+*.zip
+*.msi
+*.dmg
+*.pkg
+*.deb
+*.exe

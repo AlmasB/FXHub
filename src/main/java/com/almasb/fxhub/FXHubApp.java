@@ -63,6 +63,8 @@ public class FXHubApp extends GameApplication {
         settings.setVersion("0.2-SNAPSHOT Pre-alpha");
         settings.setWidth(1066);
         settings.setHeightFromRatio(16/9.0);
+        settings.setMainMenuEnabled(false);
+        settings.setGameMenuEnabled(false);
         settings.getCSSList().add("fxstore.css");
     }
 
@@ -234,6 +236,7 @@ public class FXHubApp extends GameApplication {
 
     @Override
     protected void initUI() {
+        getGameScene().setCursor(Cursor.DEFAULT);
         getGameScene().setBackgroundColor(Color.LIGHTGRAY);
 
         // header
