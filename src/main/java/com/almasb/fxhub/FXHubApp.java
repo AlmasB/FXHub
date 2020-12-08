@@ -4,9 +4,11 @@ import com.almasb.fxgl.app.GameApplication;
 import com.almasb.fxgl.app.GameSettings;
 import com.almasb.fxgl.core.concurrent.IOTask;
 import com.almasb.fxgl.core.util.LazyValue;
+import com.almasb.fxgl.core.util.Platform;
 import com.almasb.fxgl.logging.Logger;
 import com.almasb.fxgl.ui.FXGLScrollPane;
 import com.almasb.fxgl.ui.FontType;
+import com.almasb.fxhub.ui.Header;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -26,13 +28,13 @@ import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static com.almasb.fxgl.dsl.FXGL.*;
 
@@ -106,6 +108,7 @@ public class FXHubApp extends GameApplication {
                         String exeZipLinkWindows = "";
                         String exeZipLinkLinux = "";
                         String exeZipLinkMac = "";
+                        String exePathMac = "";
 
                         for (var line : lines) {
                             var trimmedLine = line.trim();
@@ -114,6 +117,7 @@ public class FXHubApp extends GameApplication {
                             if (trimmedLine.startsWith("---")) {
 
                                 var project = new ProjectInfo(
+                                        getSettings().getPlatform(),
                                         title,
                                         version,
                                         description,
@@ -123,8 +127,8 @@ public class FXHubApp extends GameApplication {
                                         screenshotLink,
                                         exeZipLinkWindows,
                                         exeZipLinkLinux,
-                                        exeZipLinkMac
-                                );
+                                        exeZipLinkMac,
+                                        exePathMac);
 
                                 projects.add(project);
 
@@ -138,6 +142,7 @@ public class FXHubApp extends GameApplication {
                                 exeZipLinkWindows = "";
                                 exeZipLinkLinux = "";
                                 exeZipLinkMac = "";
+                                exePathMac = "";
 
                                 continue;
                             }
@@ -161,6 +166,7 @@ public class FXHubApp extends GameApplication {
                                 continue;
                             }
 
+                            // PROPERTY PARSING
                             if (key.equals("title")) {
                                 title = value;
                             } else if (key.equals("version")) {
@@ -181,13 +187,16 @@ public class FXHubApp extends GameApplication {
                                 exeZipLinkLinux = value;
                             } else if (key.equals("exeMac")) {
                                 exeZipLinkMac = value;
+                            } else if (key.equals("exePathMac")) {
+                                exePathMac = value;
                             } else {
-                                System.out.println("Unknown key: " + key + " Value: " + value);
+                                log.warning("Unknown key: " + key + " Value: " + value);
                             }
                         }
 
                         // left over
                         var project = new ProjectInfo(
+                                getSettings().getPlatform(),
                                 title,
                                 version,
                                 description,
@@ -197,7 +206,8 @@ public class FXHubApp extends GameApplication {
                                 screenshotLink,
                                 exeZipLinkWindows,
                                 exeZipLinkLinux,
-                                exeZipLinkMac
+                                exeZipLinkMac,
+                                exePathMac
                         );
 
                         projects.add(project);
@@ -298,21 +308,6 @@ public class FXHubApp extends GameApplication {
         });
     }
 
-    private static class Header extends StackPane {
-        Header(String name) {
-            var text = getUIFactoryService().newText(name, Color.BLACK, 22.0);
-            text.setTranslateX(15);
-
-            var bg = new Rectangle(getAppWidth(), 40, Color.WHITE);
-
-            setEffect(new DropShadow(5, Color.BLACK));
-
-            setAlignment(Pos.CENTER_LEFT);
-
-            getChildren().addAll(bg, text);
-        }
-    }
-
     private static class MenuItem extends StackPane {
         private Rectangle line = new Rectangle(5, 60, Color.ORANGE);
 
@@ -324,10 +319,9 @@ public class FXHubApp extends GameApplication {
             this.content = content;
             text = new Text(name);
 
+            Rectangle bg = new Rectangle(250, 60);
 
-            Rectangle bg0 = new Rectangle(250, 60);
-
-            bg0.fillProperty().bind(
+            bg.fillProperty().bind(
                     Bindings.when(hoverProperty())
                             .then(Color.color(0.5, 0.5, 0.5, 0.5)).otherwise(Color.TRANSPARENT)
             );
@@ -344,7 +338,7 @@ public class FXHubApp extends GameApplication {
             box.setPrefWidth(300);
             box.setAlignment(Pos.CENTER_LEFT);
 
-            getChildren().addAll(bg0, box);
+            getChildren().addAll(bg, box);
 
             setSelected(false);
         }
@@ -399,6 +393,7 @@ public class FXHubApp extends GameApplication {
             btn.setTranslateX(bg.getWidth() - btn.getPrefWidth() - 10);
             btn.setTranslateY(10);
 
+            // TODO: Windows hardcoded
             if (project.getExeZipLinkWindows().endsWith(".msi")) {
                 btn.setText("Download and Install");
                 btn.setPrefWidth(130);
@@ -413,18 +408,17 @@ public class FXHubApp extends GameApplication {
                 double fileSizeMB = -1.0;
 
                 try {
-                    URL url = new URL(project.getExeZipLinkWindows());
+                    URL url = new URL(project.getExeLink());
                     fileSizeMB = url.openConnection().getContentLengthLong() / 1024.0 / 1024.0;
 
                 } catch (Exception ex1) {
                     ex1.printStackTrace();
                 }
 
-
                 // TODO: cancel download
                 // TODO: move download + progress to FXGL codebase
-                // TODO: Windows hardcoded
-                var task = newDownloadTask(project.getExeZipLinkWindows(), project)
+
+                var task = newDownloadTask(project.getExeLink(), project)
                         .thenWrap(downloadedFile -> {
 
                             String downloadedFileName = downloadedFile.toAbsolutePath().toString();
@@ -434,14 +428,18 @@ public class FXHubApp extends GameApplication {
 
                                 Unzipper.unzip(downloadedFile.toFile(), destinationDir.toFile());
 
-                                try {
-                                    return Files.list(destinationDir.resolve("bin"))
-                                            .filter(path -> path.toAbsolutePath().toString().endsWith(".bat"))
-                                            .findAny();
+                                var exeFile = destinationDir.resolve(project.getExePath());
 
-                                } catch (IOException ex) {
-                                    ex.printStackTrace();
-                                    throw new RuntimeException("Failed to read bin/");
+                                if (Files.exists(exeFile)) {
+                                    log.info("Found executable file: " + exeFile);
+                                    return Optional.of(exeFile);
+                                }
+
+                                exeFile = Paths.get(project.getExePath());
+
+                                if (Files.exists(exeFile)) {
+                                    log.info("Found executable file: " + exeFile);
+                                    return Optional.of(exeFile);
                                 }
                             }
 
@@ -449,7 +447,7 @@ public class FXHubApp extends GameApplication {
                                 return Optional.of(downloadedFile);
                             }
 
-                            throw new RuntimeException("Unknown Windows distribution file: " + downloadedFile);
+                            throw new RuntimeException("Unknown distribution file: " + downloadedFile);
 
                         })
                         .thenWrap(fileToRunOptional -> {
@@ -500,16 +498,25 @@ public class FXHubApp extends GameApplication {
 
             getChildren().addAll(bg, vbox);
 
+            var boxLogos = new HBox(10);
+            boxLogos.setTranslateX(btn.getTranslateX());
+            boxLogos.setTranslateY(btn.getTranslateY() + 40);
+
             // logos
-            if (!project.getExeZipLinkWindows().isEmpty()) {
-                var logoWin = texture("windows.png", 32, 32);
+            Stream.of(Platform.WINDOWS, Platform.MAC, Platform.LINUX)
+                    .filter(p -> !project.getExeLink(p).isEmpty())
+                    .forEach(platform -> {
+                        var logo = getPlatformLogo(platform);
 
-                logoWin.setTranslateX(btn.getTranslateX());
-                logoWin.setTranslateY(btn.getTranslateY() + 40);
+                        boxLogos.getChildren().add(logo);
+                    });
 
-                getChildren().addAll(btn, logoWin);
+
+            if (!project.getExeLink().isEmpty() && !project.getExePath().isEmpty()) {
+                getChildren().addAll(btn);
             }
 
+            getChildren().add(boxLogos);
 
 
             bg.setEffect(new DropShadow(5, Color.BLACK));
@@ -524,6 +531,19 @@ public class FXHubApp extends GameApplication {
 //                isCollapsed = !isCollapsed;
 //            });
         }
+    }
+
+    private static Node getPlatformLogo(Platform platform) {
+        if (platform == Platform.WINDOWS)
+            return texture("windows.png", 32, 32);
+
+        if (platform == Platform.MAC)
+            return texture("mac.png", 32, 32);
+
+        if (platform == Platform.LINUX)
+            return texture("linux.png", 32, 32);
+
+        return new Rectangle();
     }
 
     /**
@@ -557,3 +577,18 @@ public class FXHubApp extends GameApplication {
         launch(args);
     }
 }
+
+
+
+
+// scratch pad
+
+//                                    return Files.list(destinationDir.resolve("bin"))
+//                                            // TODO: Windows hardcoded
+//                                            .filter(path -> path.toAbsolutePath().toString().endsWith(".bat"))
+//                                            .findAny();
+
+//                                } catch (IOException ex) {
+//                                    ex.printStackTrace();
+//                                    throw new RuntimeException("Failed to read bin/");
+//                                }

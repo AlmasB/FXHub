@@ -1,6 +1,10 @@
 package com.almasb.fxhub;
 
+import com.almasb.fxgl.core.util.Platform;
+
 import java.util.List;
+
+import static com.almasb.fxgl.core.util.Platform.*;
 
 /**
  * @author Almas Baimagambetov (almaslvl@gmail.com)
@@ -17,8 +21,26 @@ public final class ProjectInfo {
     private String exeZipLinkWindows;
     private String exeZipLinkLinux;
     private String exeZipLinkMac;
+    private String exePathMac;
 
-    public ProjectInfo(String title, String version, String description, List<String> authors, List<String> tags, String website, String screenshotLink, String exeZipLinkWindows, String exeZipLinkLinux, String exeZipLinkMac) {
+    // Platform specific stuff
+    private String exeLink;
+    private String exePath;
+
+    public ProjectInfo(
+            Platform platform,
+            String title,
+            String version,
+            String description,
+            List<String> authors,
+            List<String> tags,
+            String website,
+            String screenshotLink,
+            String exeZipLinkWindows,
+            String exeZipLinkLinux,
+            String exeZipLinkMac,
+            String exePathMac) {
+
         this.title = title;
         this.version = version;
         this.description = description;
@@ -29,6 +51,21 @@ public final class ProjectInfo {
         this.exeZipLinkWindows = exeZipLinkWindows;
         this.exeZipLinkLinux = exeZipLinkLinux;
         this.exeZipLinkMac = exeZipLinkMac;
+        this.exePathMac = exePathMac;
+
+        if (platform == WINDOWS) {
+            exeLink = exeZipLinkWindows;
+            exePath = "";
+        } else if (platform == MAC) {
+            exeLink = exeZipLinkMac;
+            exePath = exePathMac;
+        } else if (platform == LINUX) {
+            exeLink = exeZipLinkLinux;
+            exePath = "";
+        } else {
+            // TODO:
+            System.out.println("Unknown platform: " + platform);
+        }
     }
 
     public String getTitle() {
@@ -69,5 +106,39 @@ public final class ProjectInfo {
 
     public String getExeZipLinkMac() {
         return exeZipLinkMac;
+    }
+
+    public String getExeLink() {
+        return exeLink;
+    }
+
+    // TODO: exe path for Win + Linux
+    public String getExePathMac() {
+        return exePathMac;
+    }
+
+    /**
+     * @return absolute or relative path to executable on end-user PC (after installation or unzipping took place)
+     */
+    public String getExePath() {
+        return exePath;
+    }
+
+    /**
+     * Note: returns empty String if platform is not one of WINDOWS|MAC|LINUX.
+     *
+     * @return link to the executable for a given platform
+     */
+    public String getExeLink(Platform platform) {
+        if (platform == WINDOWS)
+            return getExeZipLinkWindows();
+
+        if (platform == MAC)
+            return getExeZipLinkMac();
+
+        if (platform == LINUX)
+            return getExeZipLinkLinux();
+
+        return "";
     }
 }
