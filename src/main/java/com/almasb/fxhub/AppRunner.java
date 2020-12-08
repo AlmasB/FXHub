@@ -12,18 +12,20 @@ import java.io.InputStreamReader;
 public class AppRunner {
 
     /**
+     * Supported extensions: .msi, .bat
      *
-     * @param exeFile on Windows, smth.bat
+     * @param exeFile the executable file to run
      */
     public static void run(File exeFile) {
         String fileName = exeFile.getAbsolutePath();
 
         ProcessBuilder processBuilder;
 
-        if (fileName.endsWith(".bat")) {
-            processBuilder = new ProcessBuilder(fileName);
-        } else {
+        if (fileName.endsWith(".msi")) {
             processBuilder = new ProcessBuilder("msiexec", "/i", fileName);
+        } else {
+            // this handles .bat
+            processBuilder = new ProcessBuilder(fileName);
         }
 
         try {
