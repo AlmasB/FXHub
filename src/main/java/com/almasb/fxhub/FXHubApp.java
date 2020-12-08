@@ -16,6 +16,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
 import javafx.scene.Node;
+import javafx.scene.control.Separator;
 import javafx.scene.effect.DropShadow;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
@@ -365,7 +366,7 @@ public class FXHubApp extends GameApplication {
     }
 
     private static class ProjectView extends Pane {
-        private Rectangle bg = new Rectangle(750, 110, Color.WHITE);
+        private Rectangle bg = new Rectangle(750, 150, Color.WHITE);
 
         private ImageView content;
 
@@ -487,28 +488,28 @@ public class FXHubApp extends GameApplication {
             var projectNameText = new Text(project.getTitle());
             projectNameText.setFont(Font.font(24));
 
+            var projectDescText = getUIFactoryService().newText(project.getDescription(), Color.BLACK, FontType.TEXT, 18);
+            projectDescText.setTranslateY(10);
+            projectDescText.setWrappingWidth(bg.getWidth() - 50);
+
             var projectVersionText = getUIFactoryService().newText(project.getVersion(), Color.BLACK, 18);
             var authorNameText = getUIFactoryService().newText(project.getAuthors().toString(), Color.BLACK, 14.0);
 
-            // TODO: truncate website name to fixed number of chars
-            var projectWebsiteText = getUIFactoryService().newText(project.getWebsite(), Color.BLACK, FontType.MONO, 14.0);
-            projectWebsiteText.setCursor(Cursor.HAND);
-            projectWebsiteText.setOnMouseClicked(e -> {
+            var wwwLogo = texture("www.png", 32, 32);
+            wwwLogo.setPickOnBounds(true);
+            wwwLogo.setCursor(Cursor.HAND);
+            wwwLogo.setOnMouseClicked(e -> {
                 if (!project.getWebsite().isEmpty())
                     getFXApp().getHostServices().showDocument(project.getWebsite());
             });
 
-            projectWebsiteText.fillProperty().bind(
-                    Bindings.when(projectWebsiteText.hoverProperty())
-                            .then(Color.BLUE)
-                            .otherwise(Color.BLACK)
+            var vbox = new VBox(
+                    10,
+                    new HBox(15, projectNameText, projectVersionText, wwwLogo),
+                    authorNameText,
+                    projectDescText
             );
 
-            var box = new HBox(15, projectNameText, projectVersionText);
-            //box.setTranslateX(10);
-            //box.setTranslateY(5);
-
-            var vbox = new VBox(10, box, authorNameText, projectWebsiteText);
             vbox.setPadding(new Insets(10));
 
             getChildren().addAll(bg, vbox);
