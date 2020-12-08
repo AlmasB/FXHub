@@ -21,6 +21,8 @@ public final class ProjectInfo {
     private String exeZipLinkWindows;
     private String exeZipLinkLinux;
     private String exeZipLinkMac;
+    private String exePathWindows;
+    private String exePathLinux;
     private String exePathMac;
 
     // Platform specific stuff
@@ -39,6 +41,8 @@ public final class ProjectInfo {
             String exeZipLinkWindows,
             String exeZipLinkLinux,
             String exeZipLinkMac,
+            String exePathWindows,
+            String exePathLinux,
             String exePathMac) {
 
         this.title = title;
@@ -51,17 +55,19 @@ public final class ProjectInfo {
         this.exeZipLinkWindows = exeZipLinkWindows;
         this.exeZipLinkLinux = exeZipLinkLinux;
         this.exeZipLinkMac = exeZipLinkMac;
+        this.exePathWindows = exePathWindows;
+        this.exePathLinux = exePathLinux;
         this.exePathMac = exePathMac;
 
         if (platform == WINDOWS) {
             exeLink = exeZipLinkWindows;
-            exePath = "";
+            exePath = exePathWindows;
         } else if (platform == MAC) {
             exeLink = exeZipLinkMac;
             exePath = exePathMac;
         } else if (platform == LINUX) {
             exeLink = exeZipLinkLinux;
-            exePath = "";
+            exePath = exePathLinux;
         } else {
             // TODO:
             System.out.println("Unknown platform: " + platform);
@@ -112,7 +118,14 @@ public final class ProjectInfo {
         return exeLink;
     }
 
-    // TODO: exe path for Win + Linux
+    public String getExePathWindows() {
+        return exePathWindows;
+    }
+
+    public String getExePathLinux() {
+        return exePathLinux;
+    }
+
     public String getExePathMac() {
         return exePathMac;
     }

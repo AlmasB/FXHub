@@ -108,6 +108,8 @@ public class FXHubApp extends GameApplication {
                         String exeZipLinkWindows = "";
                         String exeZipLinkLinux = "";
                         String exeZipLinkMac = "";
+                        String exePathWindows = "";
+                        String exePathLinux = "";
                         String exePathMac = "";
 
                         for (var line : lines) {
@@ -128,6 +130,8 @@ public class FXHubApp extends GameApplication {
                                         exeZipLinkWindows,
                                         exeZipLinkLinux,
                                         exeZipLinkMac,
+                                        exePathWindows,
+                                        exePathLinux,
                                         exePathMac);
 
                                 projects.add(project);
@@ -142,6 +146,8 @@ public class FXHubApp extends GameApplication {
                                 exeZipLinkWindows = "";
                                 exeZipLinkLinux = "";
                                 exeZipLinkMac = "";
+                                exePathWindows = "";
+                                exePathLinux = "";
                                 exePathMac = "";
 
                                 continue;
@@ -187,6 +193,10 @@ public class FXHubApp extends GameApplication {
                                 exeZipLinkLinux = value;
                             } else if (key.equals("exeMac")) {
                                 exeZipLinkMac = value;
+                            } else if (key.equals("exePathWindows")) {
+                                exePathWindows = value;
+                            } else if (key.equals("exePathLinux")) {
+                                exePathLinux = value;
                             } else if (key.equals("exePathMac")) {
                                 exePathMac = value;
                             } else {
@@ -207,6 +217,8 @@ public class FXHubApp extends GameApplication {
                                 exeZipLinkWindows,
                                 exeZipLinkLinux,
                                 exeZipLinkMac,
+                                exePathWindows,
+                                exePathLinux,
                                 exePathMac
                         );
 
